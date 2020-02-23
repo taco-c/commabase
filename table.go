@@ -2,12 +2,13 @@ package commabase
 
 import "fmt"
 
+// Table holds information about a table.
+// A table is a csv file inside a database.
 type Table struct {
-	ShortName string
-	LongName string
-	Path string
+	ShortName    string
+	LongName     string
+	Path         string
 	DatabaseName string
-	
 }
 
 func NewTable(tableName, databaseName string) *Table {
