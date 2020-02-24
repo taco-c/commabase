@@ -1,4 +1,4 @@
 package commabase
 
-type Row struct {
-}
+// A Row contains the row-data.
+type Row map[string]string
