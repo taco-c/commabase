@@ -3,22 +3,21 @@ package commabase
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 )
 
 // Database holds information concerning a database.
 // A database is just a folder in which the tables (csv files) live.
 type Database struct {
-	Name     string
-	RootPath string
-	Table    map[string]Table
+	Path  string
+	Table map[string]*Table
 }
 
-// NewDatabase creates a new database on the filesystem,
+// Create creates a new database on the filesystem,
 // and returns a Database object.
-func NewDatabase(name, root string) (*Database, error) {
-	path := fmt.Sprintf("%s/%s", root, name)
-
+func Create(path string) (*Database, error) {
 	exists, err := fileExists(path)
 	if err != nil {
 		return &Database{}, err
@@ -31,14 +30,12 @@ func NewDatabase(name, root string) (*Database, error) {
 
 	fmt.Println("Creates dir")
 	os.MkdirAll(path, 0666)
-	return &Database{name, root, make(map[string]Table)}, nil
+	return &Database{path, make(map[string]*Table)}, nil
 }
 
-// OpenDatabase opens an existing database on the filesystem,
+// Open opens an existing database on the filesystem,
 // and returns a Database object.
-func OpenDatabase(name, root string) (*Database, error) {
-	path := fmt.Sprintf("%s/%s", root, name)
-
+func Open(path string) (*Database, error) {
 	exists, err := dirExists(path)
 	if err != nil {
 		return &Database{}, err
@@ -50,13 +47,29 @@ func OpenDatabase(name, root string) (*Database, error) {
 	}
 
 	// Loop through csv-files and add them as tables.
-	return &Database{name, root, make(map[string]Table)}, nil
+	// tableFiles := make([]os.FileInfo, 0)
+
+	db := &Database{}
+	tables := make(map[string]*Table)
+	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		tables[info.Name()] = NewTable(info.Name(), path, db)
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return &Database{path, tables}, nil
 }
 
-func (db *Database) AddTable(name string) {
-	db.Table[name] = *NewTable(name, db.Name)
+// CreateTable creates a csv file in the database directory.
+func (db *Database) CreateTable(name string) {
+	db.Table[name] = &Table{}
 }
 
 func (db *Database) String() string {
-	return db.Name
+	return db.Path
 }

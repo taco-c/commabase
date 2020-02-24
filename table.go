@@ -1,34 +1,48 @@
 package commabase
 
-import "fmt"
+import (
+	"bufio"
+	"log"
+	"os"
+	"strings"
+)
 
 // Table holds information about a table.
 // A table is a csv file inside a database.
 type Table struct {
-	ShortName    string
-	LongName     string
-	Path         string
-	DatabaseName string
-	Rows         []Row
+	Name     string
+	Path     string
+	Database *Database
+	Columns  []string
+	Rows     []Row
 }
 
 func (t *Table) String() string {
-	return t.LongName
+	return t.Path
 }
 
-// NewTable create a new blank Table.
-func NewTable(tableName, databaseName string) *Table {
-	longName := fmt.Sprintf("%s.%s", databaseName, tableName)
-	path := fmt.Sprintf("%s/%s.csv", databaseName, tableName)
-	return &Table{tableName, longName, path, databaseName, make([]Row, 0)}
-}
-
-// OpenTable will open an existing csv file and return a *Table.
-func OpenTable(tableName, databaseName string) *Table {
-	longName := fmt.Sprintf("%s.%s", databaseName, tableName)
-	path := fmt.Sprintf("%s/%s.csv", databaseName, tableName)
+// NewTable creates a new *Table object.
+func NewTable(name, path string, database *Database) *Table {
 	// Open and read a csv file.
-	return &Table{tableName, longName, path, databaseName, make([]Row, 0)}
+	columns, err := readColumns(path)
+	if err != nil {
+		return &Table{}
+	}
+	return &Table{name, path, database, columns, make([]Row, 0)}
+}
+
+func readColumns(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	s, err := bufio.NewReader(f).ReadString('\n')
+	if err != nil {
+		return make([]string, 0), err
+	}
+	return strings.Split(s, ","), nil
 }
 
 // Select selects the rows with the fields.
@@ -61,7 +75,9 @@ func (t *Table) Where(clause func(Row) bool) *Table {
 }
 
 // INSERT INTO
+// Adds a row to a Table.
 
 // DELETE
+// Removes a row from a table.
 
 // UPDATE
