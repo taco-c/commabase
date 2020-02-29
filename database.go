@@ -1,11 +1,13 @@
 package commabase
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Database holds information concerning a database.
@@ -29,7 +31,7 @@ func Create(path string) (*Database, error) {
 	}
 
 	fmt.Println("Creates dir")
-	os.MkdirAll(path, 0666)
+	os.MkdirAll(path, 0755)
 	return &Database{path, make(map[string]*Table)}, nil
 }
 
@@ -68,6 +70,37 @@ func Open(path string) (*Database, error) {
 // CreateTable creates a csv file in the database directory.
 func (db *Database) CreateTable(name string) {
 	db.Table[name] = &Table{}
+}
+
+// From gets all the rows from the file.
+func (db *Database) From(table string) *Rows {
+	path := fmt.Sprintf("%s/%s.csv", db.Path, table)
+	f, _ := os.Open(path)
+	defer f.Close()
+
+	sc := bufio.NewReader(f)
+	var columns []string
+	var row Row
+	allRows := make(Rows, 0)
+
+	// rows := make(Rows, 0)
+	i := 0
+	for line, err := sc.ReadString('\n'); err == nil; line, err = sc.ReadString('\n') {
+		line = strings.TrimSuffix(line, "\n")
+		if i == 0 {
+			columns = strings.Split(line, ",")
+			i++
+			continue
+		}
+		items := strings.Split(line, ",")
+		row = make(Row, 0)
+		for i, column := range columns {
+			row[column] = items[i]
+		}
+		allRows = append(allRows, row)
+	}
+
+	return &allRows
 }
 
 func (db *Database) String() string {

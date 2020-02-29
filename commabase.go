@@ -1,7 +1,10 @@
 package commabase
 
 import (
+	"bufio"
+	"log"
 	"os"
+	"strings"
 )
 
 func fileExists(path string) (bool, error) {
@@ -24,4 +27,18 @@ func dirExists(path string) (bool, error) {
 	}
 	// Schodinger's dir
 	return false, err
+}
+
+func readColumns(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	s, err := bufio.NewReader(f).ReadString('\n')
+	if err != nil {
+		return make([]string, 0), err
+	}
+	return strings.Split(s, ","), nil
 }
